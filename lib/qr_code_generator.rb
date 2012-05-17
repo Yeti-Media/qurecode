@@ -10,7 +10,6 @@
 [
   'qr_code_generator',
   'core_ext',
-  'rails'
 ].each do |f|
   require File.dirname(__FILE__) + "/qr_code_generator/#{f}"
 end

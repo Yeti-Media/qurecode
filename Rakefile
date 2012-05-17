@@ -1,101 +1,49 @@
+require 'rubygems'
+require 'bundler'
+begin
+  Bundler.setup(:default, :development)
+rescue Bundler::BundlerError => e
+  $stderr.puts e.message
+  $stderr.puts "Run `bundle install` to install missing gems"
+  exit e.status_code
+end
 require 'rake'
-require 'rake/gempackagetask'
-require 'rake/rdoctask'
-require 'rake/testtask'
-Dir[File.dirname(__FILE__) + "/tasks/*.rake"].each do |task|
-  load task
+require 'rake/dsl_definition'
+
+require 'jeweler'
+Jeweler::Tasks.new do |gem|
+  gem.name = "qurecode"
+  gem.homepage = "http://github.com/yeti-media/qurecode"
+  gem.license = "MIT"
+  gem.description = "QRCode generator"
+  gem.summary = "QRCode generator"
+  gem.author = "Nicolas Santa"
+  gem.email = "nicolas55ar@gmail.com"
+
+  # Dependencies in Gemfile.
+end
+Jeweler::RubygemsDotOrgTasks.new
+
+require 'rspec/core'
+require 'rspec/core/rake_task'
+RSpec::Core::RakeTask.new(:spec) do |spec|
+  spec.pattern = FileList['specs/**/*_spec.rb']
 end
 
-require 'lib/qr_code_generator'
-
-NAME = "qr_code_generator"
-VERS = ENV['VERSION'] || QRCodeGenerator::VERSION
-PKG = "#{NAME}-#{VERS}"
-
-RDOC_OPTS = [
-  '--quiet',
-  '--title', 'The QRCodeGenerator Reference',
-  '--main', 'README',
-  '--inline-source'
-]
-
-README_FILES = FileList.new('*') do |list|
-  list.exclude(/(^|[^.a-z])[a-z]+/)
-  list.exclude('TODO')
-end.to_a
-
-PKG_FILES = FileList[
-  'lib/**/*',
-  'tasks/**/*',
-  'test/**/*',
-  'Rakefile',
-  'init.rb'
-].to_a + README_FILES
-
-GEMSPEC = Gem::Specification.new do |s|
-  s.name = NAME
-  s.version = VERS
-  s.platform = Gem::Platform::RUBY
-  s.has_rdoc = true
-  s.rdoc_options += RDOC_OPTS
-  s.extra_rdoc_files = README_FILES
-  s.summary = "A library for generating QR Code images in Ruby."
-  s.description = s.summary
-  s.author = "Scott W. Bradley"
-  s.email = "scottwb@gmail.com"
-  s.homepage = "http://github.com/scottwb/qr_code_generator"
-  s.rubyforge_project = nil # REVISIT: Need to set this up.
-  s.files = PKG_FILES
-  s.require_paths = ["lib"]
-  s.test_files = FileList['test/**/*_.rb'].to_a
-
-  s.add_dependency 'rqrcode', '>= 0.3.2'
-  s.add_dependency 'rmagick', '>= 2.10.0'
-  s.add_dependency 'json', '>= 1.1.6'
+RSpec::Core::RakeTask.new(:rcov) do |spec|
+  spec.pattern = 'specs/**/*_spec.rb'
+  spec.rcov = true
 end
 
-desc "Runs all the tests."
-Rake::TestTask.new do |t|
-  t.libs << "test"
-  t.test_files = FileList['test/**/*_test.rb']
-  t.verbose = true
-end
+task :default => :spec
 
-desc "Generates all the rdoc docs."
+require 'rdoc/task'
 Rake::RDocTask.new do |rdoc|
-  rdoc.rdoc_dir = 'doc/rdoc'
-  rdoc.options += RDOC_OPTS
-  rdoc.main = "README"
-  rdoc.rdoc_files.add ['README', 'CHANGELOG', 'COPYING', 'lib/**/*.rb']
-end
+  version = File.exist?('VERSION') ? File.read('VERSION') : ""
 
-desc "Generates the gem package."
-Rake::GemPackageTask.new(GEMSPEC) do |p|
-  p.need_tar = true
-  p.gem_spec = GEMSPEC
-end
+  rdoc.rdoc_dir = 'rdoc'
+  rdoc.title = "anki-impo"
 
-desc "Releases a new QRCodeGenerator package to RubyForge."
-task :release => [:clean, :package] do
-  raise "TODO: RubyForge release not yet implemented."
+  rdoc.rdoc_files.include('README*')
+  rdoc.rdoc_files.include('lib/**/*.rb')
 end
-
-desc "Builds the package and installs it."
-task :install => [:clean, :package] do
-  sudo = RUBY_PLATFORM =~ /win32/ ? '' : 'sudo'
-  sh %{#{sudo} gem install --no-ri pkg/#{NAME}-#{VERS}}
-end
-
-desc "Uninstalls the package."
-task :uninstall do
-  sh %{sudo gem uninstall #{NAME}}
-end
-
-desc "Cleans generated files."
-task :clean => [:clobber_package, :clobber_rdoc] do
-  Dir[File.dirname(__FILE__) + "/**/*~"].each do |f|
-    sh %{rm -f #{f}}
-  end
-  sh %{rm -rf doc}
-end
-
