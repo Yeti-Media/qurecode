@@ -272,7 +272,7 @@ module QRCodeGenerator
     ############################################################
     MAX_QR_SIZE = 40  # As per the QR Spec.
     BLACK_PIXEL = 0
-    WHITE_PIXEL = 255
+    WHITE_PIXEL = Magick::QuantumRange
     BLACK_CELL  = "#000000"
     WHITE_CELL  = "#FFFFFF"
 
