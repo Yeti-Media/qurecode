@@ -134,14 +134,18 @@ module QRCodeGenerator
   DEFAULT_QR_OPTIONS = {
     :min_size => 1,
     :level    => :h,
-    :encoding => :json
+    :encoding => :json,
+    :background_color => 'ffffff',
+    :color => '000000'
   }
   
   # Default values for QR Code image output options.
   DEFAULT_IMG_OPTIONS = {
     :margin => 4,    # QR Code spec requries min. 4 "module" white margin.
     :size   => nil,  # Default to no scaling.
-    :format => 'png'
+    :format => 'png',
+    :background_color => 4294967295,
+    :color => 0
   }
 
   # Default values for QR Code HTML output options.
@@ -271,11 +275,6 @@ module QRCodeGenerator
     # Constants
     ############################################################
     MAX_QR_SIZE = 40  # As per the QR Spec.
-    BLACK_PIXEL = 0
-    WHITE_PIXEL = Magick::QuantumRange
-    BLACK_CELL  = "#000000"
-    WHITE_CELL  = "#FFFFFF"
-
 
     ############################################################
     # Accessors
@@ -391,27 +390,27 @@ module QRCodeGenerator
       html =  "<table cellpadding=\"0\" cellspacing=\"0\">"
       
       html << "<tr>"
-      html << "<td style=\"width:#{margin}px;height:#{margin}px;background-color:#{WHITE_CELL};\"></td>"
+      html << "<td style=\"width:#{margin}px;height:#{margin}px;background-color:##{DEFAULT_QR_OPTIONS[:background_color]};\"></td>"
       @width.times do
-        html << "<td style=\"width:#{size}px;height:#{margin}px;background-color:#{WHITE_CELL};\"></td>"
+        html << "<td style=\"width:#{size}px;height:#{margin}px;background-color:##{DEFAULT_QR_OPTIONS[:background_color]};\"></td>"
       end
       html << "<td style=\"width:#{margin}px;height:#{margin}\"></td>"
       html << "</tr>"
 
       (0...@height).each do |row|
         html << "<tr>"
-        html << "<td style=\"width:#{size}px;height:#{size}px;background-color:#{WHITE_CELL};\"></td>"
+        html << "<td style=\"width:#{size}px;height:#{size}px;background-color:##{DEFAULT_QR_OPTIONS[:background_color]};\"></td>"
         (0...@width).each do |col|
-          html << "<td style=\"width:#{size}px;height:#{size}px;background-color:#{@qr.is_dark(row, col) ? BLACK_CELL : WHITE_CELL};\"></td>"
+          html << "<td style=\"width:#{size}px;height:#{size}px;background-color:##{@qr.is_dark(row, col) ? DEFAULT_QR_OPTIONS[:color] : DEFAULT_QR_OPTIONS[:background_color]};\"></td>"
         end
-        html << "<td style=\"width:#{size}px;height:#{size}px;background-color:#{WHITE_CELL};\"></td>"
+        html << "<td style=\"width:#{size}px;height:#{size}px;background-color:##{DEFAULT_QR_OPTIONS[:background_color]};\"></td>"
         html << "</tr>"
       end
 
       html << "<tr>"
-      html << "<td style=\"width:#{margin}px;height:#{margin}px;background-color:#{WHITE_CELL};\"></td>"
+      html << "<td style=\"width:#{margin}px;height:#{margin}px;background-color:##{DEFAULT_QR_OPTIONS[:background_color]};\"></td>"
       @width.times do
-        html << "<td style=\"width:#{size}px;height:#{margin}px;background-color:#{WHITE_CELL};\"></td>"
+        html << "<td style=\"width:#{size}px;height:#{margin}px;background-color:##{DEFAULT_QR_OPTIONS[:background_color]};\"></td>"
       end
       html << "<td style=\"width:#{margin}px;height:#{margin}\"></td>"
       html << "</tr>"
@@ -454,8 +453,8 @@ module QRCodeGenerator
         img_height = @height + (2 * margin)
     
         # Make arrays of pixel data to use for the margins.
-        vert_margin = [].fill(WHITE_PIXEL, 0, margin * img_width)
-        horz_margin = [].fill(WHITE_PIXEL, 0, margin)
+        vert_margin = [].fill(DEFAULT_IMG_OPTIONS[:background_color], 0, margin * img_width)
+        horz_margin = [].fill(DEFAULT_IMG_OPTIONS[:background_color], 0, margin)
 
         # Convert QR Code to pixel data, starting with the top margin.
         pixels = vert_margin
@@ -467,7 +466,7 @@ module QRCodeGenerator
         (0...@height).each do |row|
           pixels += horz_margin
           (0...@width).each do |col|
-            pixels << (@qr.is_dark(row, col) ? BLACK_PIXEL : WHITE_PIXEL)
+            pixels << (@qr.is_dark(row, col) ? DEFAULT_IMG_OPTIONS[:color] : DEFAULT_IMG_OPTIONS[:background_color])
           end
           pixels += horz_margin
         end
@@ -482,9 +481,9 @@ module QRCodeGenerator
           0,
           img_width,
           img_height,
-          "I",              # grayscale
+          "RGB",              # grayscale
           pixels,
-          Magick::CharPixel # pixel range 0-255
+          Magick::LongPixel # pixel range 0-255
         )
 
         # Store the new image in the cache.
