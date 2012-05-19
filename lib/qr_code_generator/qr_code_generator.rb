@@ -134,15 +134,12 @@ module QRCodeGenerator
   DEFAULT_QR_OPTIONS = {
     :min_size => 1,
     :level    => :h,
-    :encoding => :json,
-    :background_color => 'ffffff',
-    :color => '000000'
+    :encoding => :json
   }
   
   # Default values for QR Code image output options.
   DEFAULT_IMG_OPTIONS = {
-    :margin => 4,    # QR Code spec requries min. 4 "module" white margin.
-    :size   => nil,  # Default to no scaling.
+    :size   => 0,  # Default to no scaling.
     :format => 'png',
     :background_color => 4294967295,
     :color => 0
@@ -151,7 +148,9 @@ module QRCodeGenerator
   # Default values for QR Code HTML output options.
   DEFAULT_HTML_OPTIONS = {
     :margin => 4,   # QR Code spec requires min. 4 "module" white margin.
-    :size   => 200
+    :size   => 200,
+    :background_color => 'ffffff',
+    :color => '000000'
   }
 
 
@@ -388,32 +387,14 @@ module QRCodeGenerator
       margin = size * opts[:margin]
 
       html =  "<table cellpadding=\"0\" cellspacing=\"0\">"
-      
-      html << "<tr>"
-      html << "<td style=\"width:#{margin}px;height:#{margin}px;background-color:##{DEFAULT_QR_OPTIONS[:background_color]};\"></td>"
-      @width.times do
-        html << "<td style=\"width:#{size}px;height:#{margin}px;background-color:##{DEFAULT_QR_OPTIONS[:background_color]};\"></td>"
-      end
-      html << "<td style=\"width:#{margin}px;height:#{margin}\"></td>"
-      html << "</tr>"
 
       (0...@height).each do |row|
         html << "<tr>"
-        html << "<td style=\"width:#{size}px;height:#{size}px;background-color:##{DEFAULT_QR_OPTIONS[:background_color]};\"></td>"
         (0...@width).each do |col|
-          html << "<td style=\"width:#{size}px;height:#{size}px;background-color:##{@qr.is_dark(row, col) ? DEFAULT_QR_OPTIONS[:color] : DEFAULT_QR_OPTIONS[:background_color]};\"></td>"
+          html << "<td style=\"width:#{size}px;height:#{size}px;background-color:##{@qr.is_dark(row, col) ? opts[:color] : opts[:background_color]};\"></td>"
         end
-        html << "<td style=\"width:#{size}px;height:#{size}px;background-color:##{DEFAULT_QR_OPTIONS[:background_color]};\"></td>"
         html << "</tr>"
       end
-
-      html << "<tr>"
-      html << "<td style=\"width:#{margin}px;height:#{margin}px;background-color:##{DEFAULT_QR_OPTIONS[:background_color]};\"></td>"
-      @width.times do
-        html << "<td style=\"width:#{size}px;height:#{margin}px;background-color:##{DEFAULT_QR_OPTIONS[:background_color]};\"></td>"
-      end
-      html << "<td style=\"width:#{margin}px;height:#{margin}\"></td>"
-      html << "</tr>"
 
       html << "</table>"
 
@@ -433,76 +414,22 @@ module QRCodeGenerator
     # A Magick::Image instance containing the rendered image.
     #
     def to_image(options = {})
-      image = nil
-
-      # Set the default options if they are unspecified.
       opts = DEFAULT_IMG_OPTIONS.merge(options)
+      size  = @qr.modules.count * 10
+      image   = Magick::Image.new(size, size)
 
-      # Create a unique key by which this image is/will be cached
-      # on this instance. We only need to generate a different image if
-      # the margin is different.
-      cache_key = opts[:margin].to_s
 
-      # First try to Get the cached image. If it's not cached, then create it.
-      image = @images[cache_key]
-      if image.nil?
-        # Figure out the size of the base image based on the number of
-        # modules in the QR Code and the size of the margin.
-        margin     = opts[:margin]
-        img_width  = @width  + (2 * margin)
-        img_height = @height + (2 * margin)
-    
-        # Make arrays of pixel data to use for the margins.
-        vert_margin = [].fill(DEFAULT_IMG_OPTIONS[:background_color], 0, margin * img_width)
-        horz_margin = [].fill(DEFAULT_IMG_OPTIONS[:background_color], 0, margin)
-
-        # Convert QR Code to pixel data, starting with the top margin.
-        pixels = vert_margin
-
-        # Add each row of QR Code pixels prefixed and suffixed with the margin.
-        #
-        # REVISIT: Optimize.
-        #
-        (0...@height).each do |row|
-          pixels += horz_margin
-          (0...@width).each do |col|
-            pixels << (@qr.is_dark(row, col) ? DEFAULT_IMG_OPTIONS[:color] : DEFAULT_IMG_OPTIONS[:background_color])
-          end
-          pixels += horz_margin
-        end
-
-        # Add in the bottom margin
-        pixels += vert_margin
-
-        # Generate an RMagick image of the specified format from the pixel data.
-        image = Magick::Image.new(img_width, img_height)
-        image.import_pixels(
-          0,
-          0,
-          img_width,
-          img_height,
-          "RGB",              # grayscale
-          pixels,
-          Magick::LongPixel # pixel range 0-255
-        )
-
-        # Store the new image in the cache.
-        @images[cache_key] = image
-      end
-    
-      # Now we have the base image. If an img_size is specified, try to
-      # lookup a cached image at that size, or create a scaled copy of
-      # the base image at that size if it doesn't exist, and then cache it.
-      if opts[:size]
-        cache_key = "#{opts[:margin]}/#{opts[:size]}"
-        if @images.has_key?(cache_key)
-          image = @images[cache_key]
-        else
-          image = image.sample(opts[:size], opts[:size])
-          @images[cache_key] = image
+      # draw matrix
+      @qr.modules.count.times do |r|
+        row = r * 10
+        @qr.modules.count.times do |c|
+          col = c * 10
+          dot = Magick::Draw.new
+          dot.fill("#" + (@qr.dark?(r, c) ? opts[:color] : opts[:background_color]))
+          dot.rectangle(col, row, col + 10, row + 10)
+          dot.draw(image)
         end
       end
-
       return image
     end
 
