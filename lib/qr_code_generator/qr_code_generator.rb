@@ -139,10 +139,12 @@ module QRCodeGenerator
   
   # Default values for QR Code image output options.
   DEFAULT_IMG_OPTIONS = {
-    :size   => 0,  # Default to no scaling.
+    :size   => 10,  # Default to no scaling.
     :format => 'png',
-    :background_color => 4294967295,
-    :color => 0
+    :background_color => 'ffffff',
+    :color => '000000',
+    :prettify => false,
+    :second_color => '000000'
   }
 
   # Default values for QR Code HTML output options.
@@ -415,22 +417,24 @@ module QRCodeGenerator
     #
     def to_image(options = {})
       opts = DEFAULT_IMG_OPTIONS.merge(options)
-      size  = @qr.modules.count * 10
+      opts[:second_color] = opts[:color] unless options[:second_color]
+      size  = @qr.modules.count * opts[:size]
       image   = Magick::Image.new(size, size)
 
 
       # draw matrix
       @qr.modules.count.times do |r|
-        row = r * 10
+        row = r *  opts[:size]
         @qr.modules.count.times do |c|
-          col = c * 10
+          col = c *  opts[:size]
           dot = Magick::Draw.new
-          dot.fill("#" + (@qr.dark?(r, c) ? opts[:color] : opts[:background_color]))
-          dot.rectangle(col, row, col + 10, row + 10)
+          dot.fill("#" + (@qr.dark?(r, c) ? (alone?(@qr,r,c) ? opts[:second_color] : opts[:color] ): opts[:background_color]))
+          dot.rectangle(col, row, col +  opts[:size], row +  opts[:size])
           dot.draw(image)
         end
       end
-      return image
+      image.border!(20,20, "#" + opts[:background_color])
+      return opts[:prettify] ? image.median_filter(3) : image
     end
 
     # Renders this QRCode as binary image data.
@@ -447,7 +451,7 @@ module QRCodeGenerator
     # this QRCode.
     #
     def to_image_blob(options = {})
-      # Set the default options if they are unspecified.
+      # Set t]e default options if they are unspecified.
       opts = DEFAULT_IMG_OPTIONS.merge(options)
 
       return self.to_image(opts).to_blob do
@@ -459,7 +463,7 @@ module QRCodeGenerator
     #
     # ====Parameters
     #
-    # +filename+::
+    # +filename+::)
     #   The path to the file to write the generated image to. The extension
     #   of this filename is used to determine the image file format.
     #
@@ -473,6 +477,21 @@ module QRCodeGenerator
     #
     def to_image_file(filename, options = {})
       self.to_image(options).write(filename)
+    end
+
+
+
+    def alone?(qr,row, col)
+      adjacents = [[1,0] , [0,-1] , [0,1], [-1,0]]
+      alone = !adjacents.detect do |adj|
+        ra = row + adj.first; ca =  col + adj.last
+        return false if (adj.first.zero? && adj.last.zero?) ||
+                        ra == -1 || ca == -1 ||
+                        qr.modules.count == ra ||
+                        qr.modules.count == ca
+        qr.is_dark(ra, ca)  
+      end
+      alone
     end
   end
 end
