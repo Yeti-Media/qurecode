@@ -433,7 +433,6 @@ module QRCodeGenerator
           dot.draw(image)
         end
       end
-      image.border!(20,20, "#" + opts[:background_color])
       return opts[:prettify] ? image.median_filter(3) : image
     end
 
