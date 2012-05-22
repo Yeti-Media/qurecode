@@ -418,6 +418,7 @@ module QRCodeGenerator
     def to_image(options = {})
       opts = DEFAULT_IMG_OPTIONS.merge(options)
       opts[:second_color] = opts[:color] unless options[:second_color]
+      size  = @qr.modules.count * 10
       image   = Magick::Image.new(size, size)
 
 
