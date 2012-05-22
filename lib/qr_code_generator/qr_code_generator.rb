@@ -139,7 +139,7 @@ module QRCodeGenerator
   
   # Default values for QR Code image output options.
   DEFAULT_IMG_OPTIONS = {
-    :size   => 3,  # Default to no scaling.
+    :size   => 150,  # Default to no scaling.
     :format => 'png',
     :background_color => 'ffffff',
     :color => '000000',
@@ -418,22 +418,23 @@ module QRCodeGenerator
     def to_image(options = {})
       opts = DEFAULT_IMG_OPTIONS.merge(options)
       opts[:second_color] = opts[:color] unless options[:second_color]
-      size  = @qr.modules.count * opts[:size]
       image   = Magick::Image.new(size, size)
 
 
       # draw matrix
       @qr.modules.count.times do |r|
-        row = r *  opts[:size]
+        row = r * 10
         @qr.modules.count.times do |c|
-          col = c *  opts[:size]
+          col = c * 10
           dot = Magick::Draw.new
           dot.fill("#" + (@qr.dark?(r, c) ? (alone?(@qr,r,c) ? opts[:second_color] : opts[:color] ): opts[:background_color]))
-          dot.rectangle(col, row, col +  opts[:size], row +  opts[:size])
+          dot.rectangle(col, row, col +  10, row +  10)
           dot.draw(image)
         end
       end
-      return opts[:prettify] ? image.median_filter(3) : image
+      
+      image = image.median_filter(3) if opts[:prettify]
+      image.scale(opts[:size],opts[:size])
     end
 
     # Renders this QRCode as binary image data.
