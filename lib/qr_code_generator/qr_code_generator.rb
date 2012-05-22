@@ -139,7 +139,7 @@ module QRCodeGenerator
   
   # Default values for QR Code image output options.
   DEFAULT_IMG_OPTIONS = {
-    :size   => 10,  # Default to no scaling.
+    :size   => 3,  # Default to no scaling.
     :format => 'png',
     :background_color => 'ffffff',
     :color => '000000',
