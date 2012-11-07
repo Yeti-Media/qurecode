@@ -19,7 +19,7 @@ Jeweler::Tasks.new do |gem|
   gem.summary = "QRCode generator"
   gem.author = "Nicolas Santa"
   gem.email = "nicolas55ar@gmail.com"
-
+  gem.files = Dir.glob('lib/**/*.rb')
   # Dependencies in Gemfile.
 end
 Jeweler::RubygemsDotOrgTasks.new
